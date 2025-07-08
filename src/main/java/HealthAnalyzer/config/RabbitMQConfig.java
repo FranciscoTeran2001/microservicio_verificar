@@ -11,7 +11,7 @@ public class RabbitMQConfig {
     // Cola para recibir eventos NewVitalSignEvent (requerimiento obligatorio)
     @Bean
     public Queue vitalSignQueue() {
-        return new Queue("vital-signs.queue", true); // durable=true
+        return new Queue("new.vital.sign.queue", true); // durable=true
     }
 
     // Cola para enviar alertas médicas (requerimiento obligatorio)
