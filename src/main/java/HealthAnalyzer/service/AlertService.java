@@ -19,6 +19,8 @@ public class AlertService {
     @Autowired
     private MedicalAlertRepository alertRepository;
 
+    @Autowired
+    private AlertProducer alertProducer;
 
     public void processVitalSignEvent(NewVitalSignEventDTO event) {
         if (isCritical(event.getType(), event.getValue())) {
@@ -48,8 +50,7 @@ public class AlertService {
         alertDTO.setThreshold(alert.getThreshold());
         alertDTO.setTimestamp(alert.getTimestamp());
 
-        // Uncomment when ready to use RabbitMQ
-        // streamBridge.send("alerts-out-0", alertDTO);
+        alertProducer.sendAlert(alertDTO); // Usamos el producer;
     }
 
     private boolean isCritical(String type, BigDecimal value) {
@@ -110,8 +111,8 @@ public class AlertService {
             event.setLastActiveTime(thresholdTime);
             event.setTimestamp(Instant.now());
 
-            // 3. Enviar evento a RabbitMQ (requiere StreamBridge inyectado)
-            //streamBridge.send("device-offline-events-out-0", event);
+            alertProducer.sendDeviceOfflineEvent(event); // Envía el evento
+
         });
     }
 }
