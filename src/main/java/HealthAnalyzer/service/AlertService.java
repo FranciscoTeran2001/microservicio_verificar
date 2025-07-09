@@ -3,6 +3,8 @@ package HealthAnalyzer.service;
 import HealthAnalyzer.dto.*;
 import HealthAnalyzer.entity.MedicalAlert;
 import HealthAnalyzer.repository.MedicalAlertRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +15,7 @@ import java.util.DoubleSummaryStatistics;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class AlertService {
@@ -76,25 +79,23 @@ public class AlertService {
         };
     }
 
+    // En AlertService.java
     public void generateDailyReport() {
         Instant startTime = Instant.now().minus(24, ChronoUnit.HOURS);
         List<MedicalAlert> alerts = alertRepository.findByTimestampAfter(startTime);
 
-        DailyReportDTO report = new DailyReportDTO();
-        report.setDate(Instant.now());
-        report.setTotalAlerts(alerts.size());
+        DailyReportEventDTO reportEvent = DailyReportEventDTO.builder()
+                .eventId("REP-" + Instant.now().toEpochMilli())
+                .eventType("DailyReportGenerated")
+                .reportDate(Instant.now())
+                .averages(calculateAverages(alerts))
+                .maxValues(calculateMaxValues(alerts))
+                .minValues(calculateMinValues(alerts))
+                .totalAlerts(alerts.size())
+                .timestamp(Instant.now())
+                .build();
 
-        // Calcular promedios, máximos y mínimos por tipo (ejemplo para heart-rate)
-        DoubleSummaryStatistics stats = alerts.stream()
-                .filter(a -> "CriticalHeartRateAlert".equals(a.getType()))
-                .mapToDouble(a -> a.getValue().doubleValue())
-                .summaryStatistics();
-
-        report.setAverages(Map.of("heart-rate", stats.getAverage()));
-        report.setMaxValues(Map.of("heart-rate", stats.getMax()));
-        report.setMinValues(Map.of("heart-rate", stats.getMin()));
-
-        //streamBridge.send("reports-out-0", report); // Enviar a RabbitMQ
+        alertProducer.sendDailyReport(reportEvent);
     }
 
     public void checkInactiveDevices() {
@@ -115,4 +116,46 @@ public class AlertService {
 
         });
     }
+    private Map<String, Double> calculateAverages(List<MedicalAlert> alerts) {
+        Map<String, DoubleSummaryStatistics> statsByType = alerts.stream()
+                .collect(Collectors.groupingBy(
+                        MedicalAlert::getType,
+                        Collectors.summarizingDouble(a -> a.getValue().doubleValue())
+                ));
+
+        return statsByType.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> e.getValue().getAverage()
+                ));
+    }
+
+    private Map<String, Double> calculateMaxValues(List<MedicalAlert> alerts) {
+        Map<String, DoubleSummaryStatistics> statsByType = alerts.stream()
+                .collect(Collectors.groupingBy(
+                        MedicalAlert::getType,
+                        Collectors.summarizingDouble(a -> a.getValue().doubleValue())
+                ));
+
+        return statsByType.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> e.getValue().getMax()
+                ));
+    }
+
+    private Map<String, Double> calculateMinValues(List<MedicalAlert> alerts) {
+        Map<String, DoubleSummaryStatistics> statsByType = alerts.stream()
+                .collect(Collectors.groupingBy(
+                        MedicalAlert::getType,
+                        Collectors.summarizingDouble(a -> a.getValue().doubleValue())
+                ));
+
+        return statsByType.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> e.getValue().getMin()
+                ));
+    }
+
 }

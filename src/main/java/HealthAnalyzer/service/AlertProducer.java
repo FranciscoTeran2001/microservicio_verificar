@@ -1,5 +1,6 @@
 package HealthAnalyzer.service;
 
+import HealthAnalyzer.dto.DailyReportEventDTO;
 import HealthAnalyzer.dto.DeviceOfflineEvent;
 import HealthAnalyzer.dto.MedicalAlertDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,6 +33,17 @@ public class AlertProducer {
             amqpTemplate.convertAndSend("device-offline.queue", json);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    // En AlertProducer.java
+    public void sendDailyReport(DailyReportEventDTO report) {
+        try {
+            String json = objectMapper.writeValueAsString(report);
+            amqpTemplate.convertAndSend("daily.report.queue", json);
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Aquí podrías agregar el fallback a SQLite
         }
     }
 }

@@ -19,4 +19,9 @@ public class RabbitMQConfig {
     public Queue alertsQueue() {
         return new Queue("medical-alerts.queue", true);
     }
+
+    @Bean
+    public Queue dailyReportQueue() {
+        return new Queue("daily.report.queue", true); // durable=true
+    }
 }
