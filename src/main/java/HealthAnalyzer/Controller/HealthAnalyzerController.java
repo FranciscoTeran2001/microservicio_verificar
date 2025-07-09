@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/conjunta/2p/health-analyzer")
+@RequestMapping("/health-analyzer")
 public class HealthAnalyzerController {
 
     // Endpoint opcional de salud (para monitoreo)

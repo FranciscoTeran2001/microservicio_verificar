@@ -16,7 +16,7 @@ public class VitalSignListener {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @RabbitListener(queues = "vital-signs.queue")
+    @RabbitListener(queues = "new.vital.sign.queue")
     public void handleVitalSignEvent(String message) {
         try {
             NewVitalSignEventDTO event = objectMapper.readValue(message, NewVitalSignEventDTO.class);

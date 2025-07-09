@@ -24,7 +24,7 @@ public class SchedulingConfig {
     }
 
     // Verificación de dispositivos inactivos cada 6 horas
-    @Scheduled(cron = "0 0 */6 * * ?")
+    @Scheduled(cron = "0 */1 * * * ?")
     public void checkInactiveDevices() {
         try {
             reportService.checkInactiveDevices();
